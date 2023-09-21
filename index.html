@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""/>
+
+    <style>
+        #issMap 
+        {
+            
+            height: 500px;
+        }
+    </style>
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin="">
+    </script>
+    
+    <title>Where is the ISS</title>
+</head>
+<body>
+    <h1>Where is the ISS</h1>
+
+    <p>
+        latitude: <span id="lat"></span>° <br />
+        longitude: <span id="lon"></span>°<br />
+    </p>
+    <div id="issMap"></div>
+    <script>
+        //Making maps and tiles
+        const mymap = L.map('issMap').setView([0, 0], 1);
+        const attribution = 
+        '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+
+        const tileURL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+        const tiles = L.tileLayer(tileURL, {attribution});
+        tiles.addTo(mymap);
+
+
+        //making custom icon
+        const IssIcon = L.icon({
+            iconUrl: 'iss200.png',
+            iconSize: [50,32],
+            iconAnchor: [25,16]
+        });
+
+        let marker = L.marker([0, 0], {icon: IssIcon}).addTo(mymap);
+
+        mymap.on('zoomend', function() {
+        const zoom = mymap.getZoom() + 1;
+        const width = 50 * zoom;
+        const height = 32 * zoom;
+        IssIcon.options.iconSize = [width, height];
+        IssIcon.options.iconAnchor = [width / 2, height / 2];
+        mymap.removeLayer(marker);
+        let latlng = marker.getLatLng();
+        marker = L.marker([0, 0], { icon: IssIcon }).addTo(mymap);
+        marker.setLatLng(latlng);
+      });
+
+
+   
+
+        const api_ISS_URL = 'https://api.wheretheiss.at/v1/satellites/25544' //retriving the api
+
+        //const intervalID = setInterval(getISS, 1000);// recalling the api every 1 with the setInterval()
+        let firstTime = true;
+        async function getISS(){
+
+            const response = await fetch(api_ISS_URL);  //waiting for that api
+            const data = await response.json(); // convert the data into json
+            const {latitude, longitude } = data; // destruct the data into two variables
+            //latLag.push([latitude,longitude]);
+
+            marker.setLatLng([latitude,longitude]);
+            if(firstTime){
+            mymap.setView([latitude,longitude], 2)
+            firstTime = false;
+            }
+
+            //then redisplay that onto the website 
+            document.getElementById('lat').textContent = latitude
+            document.getElementById('lon').textContent = longitude 
+        }
+
+        getISS();
+        setInterval(getISS,1000);
+</script>
+</body>
+</html>
